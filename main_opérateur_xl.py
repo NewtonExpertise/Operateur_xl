@@ -143,7 +143,7 @@ class Application(Frame):
         else:
             self.dispatch[value](self.mdb)
             messagebox.showinfo("Annonce", "Export terminé")
-            update_espion(self.code_dossier, self.base, value)
+            update_espion(self.code_dossier, self.base, f"operateur;{value}")
             sys.exit()
     
     def setAction_periode(self, e):
@@ -155,7 +155,7 @@ class Application(Frame):
         select_mois = actions.end_of_month(datetime.strptime(select_mois, "%Y-%B"))
         self.dispatch[self.select_action](self.mdb, select_mois)
         messagebox.showinfo("Annonce", "Export terminé")
-        update_espion(self.code_dossier, self.base, self.select_action)
+        update_espion(self.code_dossier, self.base, f"operateur;{self.select_action}")
         sys.exit()
 
 

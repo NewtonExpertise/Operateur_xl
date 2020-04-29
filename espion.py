@@ -5,7 +5,7 @@ from datetime import datetime
 from postgreagent import PostgreAgent
 
 
-def update_espion(dossier = "", base = "", argStr = ""):
+def update_espion(dossier = "", base = "", operation = ""):
 
     conf = OrderedDict(
         [
@@ -19,19 +19,22 @@ def update_espion(dossier = "", base = "", argStr = ""):
 
     horodat = datetime.now()
     collab = getpass.getuser()
-    table = "espion"
-    values = [collab, horodat, dossier, base, argStr]
+    table = "operateur_xl"
+    values = [collab, horodat, dossier, base, operation]
 
     sql = """
-    INSERT INTO espion (collab, horodat, dossier, base, args) 
+    INSERT INTO operateur_xl (collab, horodat, code_client, base, operation) 
     VALUES (%s, %s, %s, %s, %s);
     """
-
-    with PostgreAgent(conf) as db:
-        if db.connection:
-            if db.table_exists(table):
-                logging.debug(f"table {table} exists")        
-                db.cursor.execute(sql, values)
+    try:
+        with PostgreAgent(conf) as db:
+            if db.connection:
+                if db.table_exists(table):
+                    logging.debug(f"table {table} exists")        
+                    db.cursor.execute(sql, values)
+        return True
+    except:
+        return False
 
 # if __name__ == "__main__":
 #     import logging
