@@ -17,13 +17,13 @@ def ecritures_analytiques(mdbpath):
         DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) AS DateEcr,
         E.NumeroCompte AS Compte, E.Libelle, E.MontantTenuDebit AS Debit, E.MontantTenuCredit AS Credit, 
         (E.MontantTenuDebit-E.MontantTenuCredit) AS Solde,
-        E.NumeroPiece AS Piece, A.Centre, E.RefImage, E.CodeOperateur AS Oper, E.DateSysSaisie
+        E.NumeroPiece AS Piece, A.Centre, E.CodeOperateur AS Oper, E.DateSysSaisie
     FROM
         (
             SELECT 
                 TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, 
                 PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, 
-                NumeroPiece, CodeOperateur, DateSysSaisie, RefImage 
+                NumeroPiece, CodeOperateur, DateSysSaisie
             FROM Ecritures 
             WHERE TypeLigne='E' 
             AND (NumeroCompte LIKE '6%' OR NumeroCompte LIKE '7%')) E
@@ -78,10 +78,10 @@ def ecritures(mdbpath):
     SELECT
     DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) as DateEcr,
     E.NumeroCompte, E.CodeJournal, E.Libelle, E.MontantTenuDebit,
-    E.MontantTenuCredit, E.NumeroPiece, E.CodeOperateur, E.DateSysSaisie, A.Centre, T.DateEcheance, E.RefImage
+    E.MontantTenuCredit, E.CodeLettrage, E.NumeroPiece, E.CodeOperateur, E.DateSysSaisie, A.Centre, T.DateEcheance
     FROM
     (
-        (SELECT TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, NumeroPiece, CodeOperateur, DateSysSaisie, RefImage FROM Ecritures WHERE TypeLigne='E') E
+        (SELECT TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, NumeroPiece, CodeOperateur, DateSysSaisie, CodeLettrage FROM Ecritures WHERE TypeLigne='E') E
     LEFT JOIN
         (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Centre FROM Ecritures WHERE TypeLigne='A') A
     ON E.CodeJournal=A.CodeJournal
