@@ -13,7 +13,7 @@ def ecritures_analytiques(mdbpath):
 
     sql = f"""
     SELECT
-        E.CodeJournal AS Journal, 
+        E.CodeJournal AS Journal, E.Folio,
         DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) AS DateEcr,
         E.NumeroCompte AS Compte, E.Libelle, E.MontantTenuDebit AS Debit, E.MontantTenuCredit AS Credit, 
         (E.MontantTenuDebit-E.MontantTenuCredit) AS Solde,
@@ -68,6 +68,9 @@ def ecritures_analytiques(mdbpath):
     xw.Range('E:G').number_format='# ##0,00'
     xw.Range('A1').value = data
     ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
     # return data
 
 def ecritures(mdbpath):
@@ -77,7 +80,7 @@ def ecritures(mdbpath):
     sql = """
     SELECT
     DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) as DateEcr,
-    E.NumeroCompte, E.CodeJournal, E.Libelle, E.MontantTenuDebit,
+    E.NumeroCompte, E.CodeJournal, E.Folio, E.Libelle, E.MontantTenuDebit,
     E.MontantTenuCredit, E.CodeLettrage, E.NumeroPiece, E.CodeOperateur, E.DateSysSaisie, A.Centre, T.DateEcheance
     FROM
     (
@@ -112,6 +115,9 @@ def ecritures(mdbpath):
     xw.Range('E:F').number_format='# ##0,00'
     xw.Range('A1').value = data
     ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
 
 def balance_generale_totale(mdbpath, fin_periode):
     """
@@ -147,6 +153,9 @@ def balance_generale_totale(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
 
 def balance_generale(mdbpath, fin_periode):
     """
@@ -210,6 +219,9 @@ def balance_generale(mdbpath, fin_periode):
         xw.Range('A:A').number_format='@'
         xw.Range('A1').value = data
         ws.autofit()
+        used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+        used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+        xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
 
 def balance_clients(mdbpath, fin_periode):
     """
@@ -248,6 +260,9 @@ def balance_clients(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
 
 def balance_fournisseurs(mdbpath, fin_periode):
     """
@@ -286,6 +301,9 @@ def balance_fournisseurs(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
 
 def codes_journaux(mdbpath):
     sql="""
