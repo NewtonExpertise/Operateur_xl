@@ -59,11 +59,12 @@ class Application(Frame):
         self.dispatch = {
             actions.ecritures.__name__: actions.ecritures,
             actions.ecritures_analytiques.__name__: actions.ecritures_analytiques,
-            actions.codes_journaux.__name__: actions.codes_journaux,
+            actions.grand_livre.__name__: actions.grand_livre,
             actions.balance_generale_totale.__name__: actions.balance_generale_totale,
             actions.balance_generale.__name__: actions.balance_generale,
             actions.balance_clients.__name__: actions.balance_clients,
-            actions.balance_fournisseurs.__name__: actions.balance_fournisseurs
+            actions.balance_fournisseurs.__name__: actions.balance_fournisseurs,
+            actions.codes_journaux.__name__: actions.codes_journaux,
         }
         for i, action in enumerate(self.dispatch.keys()):
             self.liste_actions.insert(i, action)
@@ -133,7 +134,17 @@ class Application(Frame):
         # self.liste_actions.configure(state='disabled')
         index, = self.liste_actions.curselection()
         value = self.liste_actions.get(index)
+
         if "balance" in value:
+            self.combobox_periode.set('')
+            self.combobox_periode.grid(row = 5, column = 1, padx = 10, pady = 3)
+            self.lab_Fin_Periode.grid(row=4, column=0, rowspan= 4, padx=10, pady=3,sticky='e')
+            index, = self.liste_actions.curselection()
+            self.select_action = self.liste_actions.get(index)
+            periode = [ date.strftime("%Y-%B") for date in actions.get_mois_exercice(self.mdb)]
+            self.combobox_periode['values'] = periode
+        elif "livre" in value:
+            self.combobox_periode.set('')
             self.combobox_periode.grid(row = 5, column = 1, padx = 10, pady = 3)
             self.lab_Fin_Periode.grid(row=4, column=0, rowspan= 4, padx=10, pady=3,sticky='e')
             index, = self.liste_actions.curselection()

@@ -327,6 +327,62 @@ def codes_journaux(mdbpath):
     for i, value in enumerate(fullset, row):
         xw.Range((i, col)).value = value
 
+
+def grand_livre(mdbpath, fin_periode):
+    """
+    retourne un grand livre 
+    """
+    sql = f"""
+    SELECT DateEcr ,  NumeroCompte , CodeJournal, Folio, Libelle, MontantTenuDebit, MontantTenuCredit,  CodeLettrage,  NumeroPiece,  CodeOperateur , DateSysSaisie, Centre,  DateEcheance
+    FROM ( SELECT '' as DateEcr , E.NumeroCompte as NumeroCompte ,'' as  CodeJournal, '' as Folio, 'Total compte' as Libelle, 
+        SUM(E.MontantTenuDebit) as MontantTenuDebit, SUM(E.MontantTenuCredit) as MontantTenuCredit, '' as CodeLettrage, '' as NumeroPiece, '' as CodeOperateur , '' as DateSysSaisie, '' as Centre, '' as DateEcheance
+        FROM Ecritures as E 
+        WHERE TypeLigne='E'
+        AND E.PeriodeEcriture < #{fin_periode}#
+        GROUP BY E.NumeroCompte
+        UNION 
+        SELECT DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) as DateEcr,
+        E.NumeroCompte, E.CodeJournal, E.Folio, E.Libelle, E.MontantTenuDebit,
+        E.MontantTenuCredit, E.CodeLettrage, E.NumeroPiece, E.CodeOperateur, E.DateSysSaisie, A.Centre, T.DateEcheance
+        FROM ( (SELECT TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, NumeroPiece, CodeOperateur, DateSysSaisie, CodeLettrage FROM Ecritures WHERE TypeLigne='E') E
+            LEFT JOIN
+            (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Centre FROM Ecritures WHERE TypeLigne='A') A
+            ON E.CodeJournal=A.CodeJournal
+            AND E.Folio=A.Folio
+            AND E.LigneFolio=A.LigneFolio
+            AND E.PeriodeEcriture=A.PeriodeEcriture)
+            LEFT JOIN
+            (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, DateEcheance FROM Ecritures WHERE TypeLigne='T') T
+            ON E.CodeJournal=T.CodeJournal
+            AND E.Folio=T.Folio
+            AND E.LigneFolio=T.LigneFolio
+            AND E.PeriodeEcriture=T.PeriodeEcriture
+            WHERE E.PeriodeEcriture < #{fin_periode}# )
+    ORDER BY NumeroCompte
+    """
+    with MdbConnect(mdbpath) as mdb:
+        info, data = mdb.queryInfoData(sql)
+    headers = [x[0] for x in info]
+    data.insert(0, headers)
+
+    ws = xw.sheets.active
+    wb = ws.book
+    num_client = os.path.basename(os.path.dirname(mdbpath))
+    base = os.path.basename(os.path.dirname(os.path.dirname(mdbpath)))
+    Nom_feuille_excel = "G_L_"+num_client+"_"+base
+    add_sheet_new_name(wb, Nom_feuille_excel)
+
+    xw.Range('G:G').number_format='@'
+    xw.Range('B:B').number_format='@'
+    xw.Range('A:A').number_format='jj/mm/aaaa'
+    xw.Range('E:F').number_format='# ##0,00'
+    xw.Range('A1').value = data
+    ws.autofit()
+    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
+    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
+    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+
+
 def callSelectedCell():
     """
     Retourne les coordonnées de la cellule sélectionnée
@@ -431,9 +487,10 @@ if __name__ == "__main__":
     # import pprint
     # pp=pprint.PrettyPrinter(indent=4)
     mdb=  r'\\srvquadra\Qappli\Quadra\DATABASE\cpta\DA2018\000737\qcompta.mdb'
+    from datetime import datetime
     # pp.pprint(get_mois_exercice(mdb))
     # import xlwings as xw
     # ws = xw.sheets.active
     # wb=ws.book
-    ecritures_analytiques(mdb)
+    grand_livre(mdb , datetime(2018, 3,31,))
 

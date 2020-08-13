@@ -113,6 +113,7 @@ class MdbConnect(object):
         return data
 
     def queryInfoData(self, sql):
+        print(sql)
         desc = []
         data = []
         try:
