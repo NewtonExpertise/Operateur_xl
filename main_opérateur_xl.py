@@ -133,7 +133,7 @@ class Application(Frame):
         # self.liste_actions.configure(state='disabled')
         index, = self.liste_actions.curselection()
         value = self.liste_actions.get(index)
-        if "balance" in value:
+        if "balance" in value or "livre" in value:
             self.combobox_periode.grid(row = 5, column = 1, padx = 10, pady = 3)
             self.lab_Fin_Periode.grid(row=4, column=0, rowspan= 4, padx=10, pady=3,sticky='e')
             index, = self.liste_actions.curselection()

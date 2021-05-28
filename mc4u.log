@@ -1,0 +1,18 @@
+05-28 11:51 INFO:gi_liste_clients	quadraenv -- openning qgi : //srvquadra/QAPPLI/Quadra/database/gi/0000\qgi.mdb
+05-28 11:51 INFO:gi_liste_clients	quadraenv -- connection OK
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000966/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000967/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000969/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000968/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000752/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000965/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/000424/qcompta.mdb
+05-28 11:51 INFO:__init__	importCodes -- Ouverture de Mc4u/CodesAnalytiques.xls
+05-28 11:51 INFO:__init__	ProfitAndLossRequest -- Query db compta : //srvquadra/QAPPLI/Quadra/database/cpta/DC/016382/qcompta.mdb

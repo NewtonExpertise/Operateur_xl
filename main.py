@@ -10,6 +10,9 @@ import locale
 import os
 locale.setlocale(locale.LC_TIME,'')
 
+
+
+
 class Application(Frame):
 
     def __init__(self, master=None):
@@ -17,6 +20,8 @@ class Application(Frame):
         self.couleur = "#E4AB5B"
         self.pack()
         self.create_widgets()
+
+
 
     def create_widgets(self):
 
@@ -36,6 +41,8 @@ class Application(Frame):
         self.liste_actions = Listbox(self,width=25, selectbackground=self.couleur, cursor="hand2")
         self.liste_actions.config(height=0)
         self.combobox_periode = Combobox(self, width=22, state="readonly", cursor="hand2")
+        self.combobox_debut = Combobox(self, width=22, state="readonly", cursor="hand2")
+        self.combobox_fin = Combobox(self, width=22, state="readonly", cursor="hand2")
 
         # Positions
         self.lab_dossier.grid(row=0, column=0, padx=10, pady=3,sticky='e')
@@ -50,6 +57,7 @@ class Application(Frame):
         self.liste_bases.bind("<ButtonRelease-1>", self.setMdbPath)
         self.liste_actions.bind("<ButtonRelease-1>", self.setAction)
         self.combobox_periode.bind("<<ComboboxSelected>>", self.setAction_periode)
+        self.combobox_fin.bind("<<ComboboxSelected>>", self.setAction_debut_fin)
         
         # Callback pour filtrage de la liste dossiers
         self.var_dossiers.trace("w", lambda name, index,
@@ -65,6 +73,7 @@ class Application(Frame):
             actions.balance_clients.__name__: actions.balance_clients,
             actions.balance_fournisseurs.__name__: actions.balance_fournisseurs,
             actions.codes_journaux.__name__: actions.codes_journaux,
+            actions.Mc4u_Minot.__name__: actions.Mc4u_Minot,
         }
         for i, action in enumerate(self.dispatch.keys()):
             self.liste_actions.insert(i, action)
@@ -135,22 +144,25 @@ class Application(Frame):
         index, = self.liste_actions.curselection()
         value = self.liste_actions.get(index)
 
-        if "balance" in value:
+        if "balance" in value or "livre" in value:
             self.combobox_periode.set('')
             self.combobox_periode.grid(row = 5, column = 1, padx = 10, pady = 3)
             self.lab_Fin_Periode.grid(row=4, column=0, rowspan= 4, padx=10, pady=3,sticky='e')
             index, = self.liste_actions.curselection()
             self.select_action = self.liste_actions.get(index)
-            periode = [ date.strftime("%Y-%B") for date in actions.get_mois_exercice(self.mdb)]
+            periode = [date.strftime("%Y-%B") for date in actions.get_mois_exercice(self.mdb)]
             self.combobox_periode['values'] = periode
-        elif "livre" in value:
-            self.combobox_periode.set('')
-            self.combobox_periode.grid(row = 5, column = 1, padx = 10, pady = 3)
+        elif "Mc4u" in value:
+            self.combobox_debut.set('')
+            self.combobox_fin.set('')
+            self.combobox_debut.grid(row = 5, column = 1, padx = 10, pady = 3)
+            self.combobox_fin.grid(row = 6, column = 1, padx = 10, pady = 3)
             self.lab_Fin_Periode.grid(row=4, column=0, rowspan= 4, padx=10, pady=3,sticky='e')
             index, = self.liste_actions.curselection()
             self.select_action = self.liste_actions.get(index)
             periode = [ date.strftime("%Y-%B") for date in actions.get_mois_exercice(self.mdb)]
-            self.combobox_periode['values'] = periode
+            self.combobox_debut['values'] = periode
+            self.combobox_fin['values'] = periode
         else:
             self.dispatch[value](self.mdb)
             messagebox.showinfo("Annonce", "Export terminé")
@@ -169,9 +181,23 @@ class Application(Frame):
         update_espion(self.code_dossier, self.base, self.select_action)
         sys.exit()
 
+    def setAction_debut_fin(self, e):
+        """
+        Sélection du programmes qui sera lancé avec une période choisie
+        """
+        # mois sélectionné :
+        select_debut = self.combobox_debut.get()
+        select_debut = datetime.strptime(select_debut, "%Y-%B")
+        select_fin = self.combobox_fin.get()
+        select_fin = datetime.strptime(select_fin, "%Y-%B")
+        self.dispatch[self.select_action](self.code_dossier, select_debut, select_fin)
+        messagebox.showinfo("Annonce", "Export terminé")
+        update_espion(self.code_dossier, self.base, self.select_action)
+        sys.exit()
+
 
 root = Tk()
-root.title('Opérateur Excel')
+root.title('Opérateur Excel v2')
 root.wm_attributes("-topmost", 1)
 ressources = os.path.dirname(sys.argv[0])
 root.iconbitmap(os.path.join(ressources,"IMG/favicon.png"))

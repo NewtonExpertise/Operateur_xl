@@ -2,7 +2,13 @@ import os
 from mdbagent import MdbConnect
 import xlwings as xw
 from datetime import timedelta,datetime
+from Mc4u.mc4u import Gene_Mc4u
 import re
+
+
+def Mc4u_Minot(code_dossier, debut, fin):
+    Mc4u = Gene_Mc4u(code_dossier, debut, fin)
+    Mc4u.get_Mc4u()
 
 
 
@@ -68,10 +74,7 @@ def ecritures_analytiques(mdbpath):
     xw.Range('E:G').number_format='# ##0,00'
     xw.Range('A1').value = data
     ws.autofit()
-    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
-    # return data
+    set_AutoFilter(ws)
 
 def ecritures(mdbpath):
     """
@@ -108,16 +111,13 @@ def ecritures(mdbpath):
     num_client = os.path.basename(os.path.dirname(mdbpath))
     base = os.path.basename(os.path.dirname(os.path.dirname(mdbpath)))
     Nom_feuille_excel = "Ecritures_"+num_client+"_"+base
-    add_sheet_new_name(wb, Nom_feuille_excel)
-
-    xw.Range('G:G').number_format='@'
-    xw.Range('B:B').number_format='@'
-    xw.Range('E:F').number_format='# ##0,00'
-    xw.Range('A1').value = data
+    ws = add_sheet_new_name(wb, Nom_feuille_excel)
+    ws.range('G:G').number_format='@'
+    ws.range('B:B').number_format='@'
+    ws.range('E:F').number_format='# ##0,00'
+    ws.range('A1').value = data
     ws.autofit()
-    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+    set_AutoFilter(ws)
 
 def balance_generale_totale(mdbpath, fin_periode):
     """
@@ -153,9 +153,7 @@ def balance_generale_totale(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
-    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+    set_AutoFilter(ws)
 
 def balance_generale(mdbpath, fin_periode):
     """
@@ -219,9 +217,7 @@ def balance_generale(mdbpath, fin_periode):
         xw.Range('A:A').number_format='@'
         xw.Range('A1').value = data
         ws.autofit()
-        used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-        used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-        xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+        set_AutoFilter(ws)
 
 def balance_clients(mdbpath, fin_periode):
     """
@@ -260,9 +256,7 @@ def balance_clients(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
-    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+    set_AutoFilter(ws)
 
 def balance_fournisseurs(mdbpath, fin_periode):
     """
@@ -301,9 +295,7 @@ def balance_fournisseurs(mdbpath, fin_periode):
     xw.Range('A:A').number_format='@'
     xw.Range('A1').value = data
     ws.autofit()
-    used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
-    used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+    set_AutoFilter(ws)
 
 def codes_journaux(mdbpath):
     sql="""
@@ -332,6 +324,7 @@ def grand_livre(mdbpath, fin_periode):
     """
     retourne un grand livre 
     """
+
     sql = f"""
     SELECT DateEcr ,  NumeroCompte , CodeJournal, Folio, Libelle, MontantTenuDebit, MontantTenuCredit,  CodeLettrage,  NumeroPiece,  CodeOperateur , DateSysSaisie, Centre,  DateEcheance
     FROM ( SELECT '' as DateEcr , E.NumeroCompte as NumeroCompte ,'' as  CodeJournal, '' as Folio, 'Total compte' as Libelle, 
@@ -344,15 +337,21 @@ def grand_livre(mdbpath, fin_periode):
         SELECT DateSerial(Year(E.PeriodeEcriture), Month(E.PeriodeEcriture), E.JourEcriture) as DateEcr,
         E.NumeroCompte, E.CodeJournal, E.Folio, E.Libelle, E.MontantTenuDebit,
         E.MontantTenuCredit, E.CodeLettrage, E.NumeroPiece, E.CodeOperateur, E.DateSysSaisie, A.Centre, T.DateEcheance
-        FROM ( (SELECT TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, NumeroPiece, CodeOperateur, DateSysSaisie, CodeLettrage FROM Ecritures WHERE TypeLigne='E') E
+        FROM ( (SELECT TypeLigne, NumUniq, NumeroCompte, CodeJournal,  Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Libelle, MontantTenuDebit, MontantTenuCredit, NumeroPiece, CodeOperateur, DateSysSaisie, CodeLettrage 
+                FROM Ecritures 
+                WHERE TypeLigne='E') E
             LEFT JOIN
-            (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Centre FROM Ecritures WHERE TypeLigne='A') A
-            ON E.CodeJournal=A.CodeJournal
-            AND E.Folio=A.Folio
-            AND E.LigneFolio=A.LigneFolio
-            AND E.PeriodeEcriture=A.PeriodeEcriture)
+                (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, Centre 
+                FROM Ecritures 
+                WHERE TypeLigne='A') A
+                ON E.CodeJournal=A.CodeJournal
+                AND E.Folio=A.Folio
+                AND E.LigneFolio=A.LigneFolio
+                AND E.PeriodeEcriture=A.PeriodeEcriture)
             LEFT JOIN
-            (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, DateEcheance FROM Ecritures WHERE TypeLigne='T') T
+                (SELECT TypeLigne, CodeJournal, Folio, LigneFolio, PeriodeEcriture, JourEcriture, NumLigne, DateEcheance 
+                FROM Ecritures 
+                WHERE TypeLigne='T') T
             ON E.CodeJournal=T.CodeJournal
             AND E.Folio=T.Folio
             AND E.LigneFolio=T.LigneFolio
@@ -378,9 +377,14 @@ def grand_livre(mdbpath, fin_periode):
     xw.Range('E:F').number_format='# ##0,00'
     xw.Range('A1').value = data
     ws.autofit()
+    set_AutoFilter(ws)
+
+
+def set_AutoFilter(ws):
     used_range_rows = (ws.api.UsedRange.Row, ws.api.UsedRange.Row + ws.api.UsedRange.Rows.Count -1)
     used_range_cols = (ws.api.UsedRange.Column, ws.api.UsedRange.Column + ws.api.UsedRange.Columns.Count -1)
-    xw.Range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(VisibleDropDown=True)
+    ws.range(*zip(used_range_rows, used_range_cols)).api.AutoFilter(1)
+
 
 
 def callSelectedCell():
@@ -484,13 +488,15 @@ def add_sheet_new_name(wb, nom):
 
 
 if __name__ == "__main__":
+
+
     # import pprint
     # pp=pprint.PrettyPrinter(indent=4)
-    mdb=  r'\\srvquadra\Qappli\Quadra\DATABASE\cpta\DA2018\000737\qcompta.mdb'
+    mdb=  r'\\srvquadra\Qappli\Quadra\DATABASE\cpta\DC\000948\qcompta.mdb'
     from datetime import datetime
     # pp.pprint(get_mois_exercice(mdb))
     # import xlwings as xw
     # ws = xw.sheets.active
     # wb=ws.book
-    grand_livre(mdb , datetime(2018, 3,31,))
+    ecritures(mdb)
 
