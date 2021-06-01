@@ -42,7 +42,7 @@ class Gene_Mc4u():
         self.generateur_excel.invoke( debut, fin)
         if if_reporting():
             if self.generateur_excel.PNL_global:
-                dataReporting(self.generateur_excel.PNL_global,fin, self.generateur_excel.nb_resto)
+                dataReporting(self.generateur_excel.PNL_global, fin, self.generateur_excel.nb_resto, self.generateur_excel.mdb_holding)
  
     def Messagebox(self,title, text):
         result = ctypes.windll.user32.MessageBoxW(0, text, title, 4)

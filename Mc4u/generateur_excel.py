@@ -26,9 +26,11 @@ class generateur_excel(object):
         self.code_dossier = code_dossier.zfill(6)
         self.liste_cli = self.qenv.gi_liste_clients()
         self.nom_dossier = self.liste_cli[self.code_dossier]["rs"]
-        self.group, self.list_groupe_Mc4u = self.get_groupe()
+        self.group, self.holding, self.list_groupe_Mc4u = self.get_groupe()
         self.PNL_global = False
         self.nb_resto = 0
+        self.mdb_holding = self.qenv.make_db_path(self.holding, "DC")
+        print(self.mdb_holding)
 
 
     def invoke(self, debut ,fin):
@@ -51,6 +53,7 @@ class generateur_excel(object):
                 # pp = pprint.PrettyPrinter(indent=4)
                 # pp.pprint(dico)
                 self.get_Mc4u(book, dico, fin, codeMcdo)
+            
         else:
             xl_codes_ana = os.path.join(sources,"Mc4u/CodesAnalytiques.xls")
             impcod = importCodes(xl_codes_ana)
@@ -60,7 +63,7 @@ class generateur_excel(object):
             dico = sa.creaDic(codes_ana)
             self.get_Mc4u(book, dico, fin, self.nom_dossier)
         self.save_wb(book,fin)
-        
+
     def get_Mc4u(self, book, dico, fin, codeMcdo):
         """
         Génère un Mc4u sur un nouvelle onglet.
@@ -137,14 +140,19 @@ class generateur_excel(object):
         ws = wb.sheet_by_name("Mc4u")
         list_group = []
         group = False
+        holding = False
         for row in range(1, ws.nrows):
-            if self.code_dossier == str(int(ws.cell(row, 2).value)).zfill(6):
+            if self.code_dossier == str(int(ws.cell(row, 3).value)).zfill(6):
                 group = ws.cell(row, 0).value
         if group:
             for row in range(1, ws.nrows):
-                codeQuadra = str(int(ws.cell(row, 2).value)).zfill(6)
-                codeMcdo = str(int(ws.cell(row, 3).value))
-                list_group.append([codeQuadra, codeMcdo])
+                if ws.cell(row, 0).value == group:
+                    if ws.cell(row, 1).value == "Restaurant":
+                        codeQuadra = str(int(ws.cell(row, 3).value)).zfill(6)
+                        codeMcdo = str(int(ws.cell(row, 4).value))
+                        list_group.append([codeQuadra, codeMcdo])
+                    if ws.cell(row, 1).value == "Holding":
+                        holding = str(int(ws.cell(row, 3).value)).zfill(6)
         else:
             pass
             ####
@@ -152,7 +160,7 @@ class generateur_excel(object):
             #### showinfos messages erreur. ---> Génération Mc4u individuel.
             ####
             ####
-        return group, list_group
+        return group, holding, list_group
 
     def create_global_PNL(self, dico):
         """prend un P&L pour creer un p&l global"""
@@ -185,7 +193,7 @@ class generateur_excel(object):
         """
         Retourn un nom de fichier unique en fonction des fichiers déjà existant dans le dossier
         """
-        
+
         # si le nom de fichier existe, on en cherche un autre
         while os.path.exists(path):
             # on vire l'extension

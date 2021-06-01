@@ -1,6 +1,7 @@
 import  xlwings as xw
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from Mc4u.mdbagent import MdbConnect
 
 
 try:
@@ -32,7 +33,7 @@ def if_report_sheet(fin):
     return exist
 
 
-def dataReporting(dico, fin_periode, nb_resto):
+def dataReporting(dico, fin_periode, nb_resto, Mdb_holding):
     """Alimente le reporting avec les données extraites de la compta et les cumuls de l'onget du mois précédent."""
     print("dataReporting")
     vents_alim = dico["001"]["sold_mensuel"]
@@ -42,7 +43,7 @@ def dataReporting(dico, fin_periode, nb_resto):
     soi = dico["093"]["sold_mensuel"]
     g_a = dico["102"]["sold_mensuel"]
     resultat_pnl = dico["106"]["sold_mensuel"]
-    # holding = 
+    RT_holding  = get_RT_holding(Mdb_holding, fin_periode)
     lastmonth = fin_periode + relativedelta(months=-1)
     target_sheet_periode = fin_periode.strftime("%m%Y")
     find_ws = False
@@ -59,7 +60,7 @@ def dataReporting(dico, fin_periode, nb_resto):
         target_sheet_result.range("N14").value = soi
         target_sheet_result.range("P14").value = g_a
         target_sheet_result.range("Q14").value = resultat_pnl
-        # target_sheet_result.range("R17").value = holding
+        target_sheet_result.range("R14").value = RT_holding
 
         last_sheet_name = get_last_sheet(lastmonth)
         if last_sheet_name:    
@@ -78,8 +79,8 @@ def dataReporting(dico, fin_periode, nb_resto):
                 g_a += last_sheet.range("P17").value
             if last_sheet.range("Q17").value:
                 resultat_pnl += last_sheet.range("Q17").value
-            # if last_sheet.range("R17").value:
-                # holding += last_sheet.range("R17").value
+            if last_sheet.range("R17").value:
+                RT_holding += last_sheet.range("R17").value
 
         target_sheet_result = wb.sheets[target_sheet_periode]
         target_sheet_result.range("D14").value = nb_resto
@@ -91,7 +92,7 @@ def dataReporting(dico, fin_periode, nb_resto):
         target_sheet_result.range("N17").value = soi
         target_sheet_result.range("P17").value = g_a
         target_sheet_result.range("Q17").value = resultat_pnl
-        # target_sheet_result.range("R17").value = holding
+        target_sheet_result.range("R17").value = RT_holding
 
 
 def get_last_sheet(date):
@@ -102,6 +103,30 @@ def get_last_sheet(date):
         if target_name ==  sheet.name:
             find= sheet.name
     return find
+
+
+def get_RT_holding(chem_base, fin):
+    """
+    Récupère le résultat de la holding.
+    """
+    sql = f"""select SUM(produit) - SUM(charge)
+            from(
+            Select 0 as charge, SUM(MontantTenuCredit) - SUM(MontantTenuDebit) as produit
+            FROM Ecritures
+            WHERE TypeLigne='E'
+            AND NumeroCompte LIKE '7%'
+            AND PeriodeEcriture=#{fin}#
+            union
+            Select SUM(MontantTenuDebit) - SUM(MontantTenuCredit)  as charge, 0 as produit
+            FROM Ecritures
+            WHERE TypeLigne='E'
+            AND NumeroCompte LIKE '6%'
+            AND PeriodeEcriture=#{fin}#)"""
+    print(sql)
+    print(chem_base)
+    with MdbConnect(chem_base) as mdb:
+        data = mdb.query(sql)[0][0]
+    return data
 
 if __name__ == '__main__':
     from datetime import datetime

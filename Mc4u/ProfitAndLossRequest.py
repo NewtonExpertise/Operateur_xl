@@ -11,6 +11,9 @@ try:
 except:
     sources = ''
 
+
+
+
 class reqBalanceAna(object) :
     """description of class"""
     def __init__(self, chem_base, debut, fin):
@@ -224,6 +227,7 @@ class reqBalanceAna(object) :
         logging.debug("\n" + pp.pformat(copy_codes))
 
         return copy_codes
+
 
 
 if __name__ == '__main__':
