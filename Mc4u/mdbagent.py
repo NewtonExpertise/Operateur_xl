@@ -17,6 +17,7 @@ def mdbAvailable(mdbpath):
         root, ext = os.path.splitext(mdbpath)
         ldbpath = f"{root}.ldb"
         if os.path.isfile(ldbpath):
+            print("dossier ouvert")
             logging.info("dossier ouvert")
             return False
     # VERIF 2

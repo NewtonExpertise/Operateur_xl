@@ -33,6 +33,7 @@ class importCodes(object):
                 }
             )
 
+
     def creaDic(self):
         """
         Return la config P&L

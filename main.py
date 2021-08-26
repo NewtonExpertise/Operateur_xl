@@ -6,6 +6,7 @@ from quadraenv import QuadraSetEnv
 from espion import update_espion
 from datetime import datetime
 from time import strftime, strptime
+from tkinter.messagebox import showwarning
 import locale
 import os
 locale.setlocale(locale.LC_TIME,'')
@@ -168,6 +169,9 @@ class Application(Frame):
             messagebox.showinfo("Annonce", "Export terminé")
             update_espion(self.code_dossier, self.base, value)
             sys.exit()
+
+    def show_traitement(self):
+        self.lab_dossier.configure(text = "Traitement en cours ⌛")
     
     def setAction_periode(self, e):
         """
@@ -186,6 +190,7 @@ class Application(Frame):
         Sélection du programmes qui sera lancé avec une période choisie
         """
         # mois sélectionné :
+        self.show_traitement()
         select_debut = self.combobox_debut.get()
         select_debut = datetime.strptime(select_debut, "%Y-%B")
         select_fin = self.combobox_fin.get()
@@ -196,10 +201,15 @@ class Application(Frame):
         sys.exit()
 
 
-root = Tk()
-root.title('Opérateur Excel v2')
-root.wm_attributes("-topmost", 1)
-ressources = os.path.dirname(sys.argv[0])
-root.iconbitmap(os.path.join(ressources,"IMG/favicon.png"))
-app = Application(master=root)
-app.mainloop()
+
+import traceback
+try:
+    root = Tk()
+    root.title('Opérateur Excel v2')
+    root.wm_attributes("-topmost", 1)
+    ressources = os.path.dirname(sys.argv[0])
+    root.iconbitmap(os.path.join(ressources,"IMG/favicon.png"))
+    app = Application(master=root)
+    app.mainloop()
+except Exception as e:
+    showwarning(title = f'{e}', message=f"{traceback.format_exc()}")

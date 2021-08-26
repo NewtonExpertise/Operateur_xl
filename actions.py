@@ -3,6 +3,8 @@ from mdbagent import MdbConnect
 import xlwings as xw
 from datetime import timedelta,datetime
 from Mc4u.mc4u import Gene_Mc4u
+from Mc4u.generateur_excel import generateur_excel
+
 import re
 
 

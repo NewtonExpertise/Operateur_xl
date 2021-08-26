@@ -4,25 +4,26 @@ import pyodbc
 import sys
 import os
 import pprint
-from Mc4u.mdbagent import MdbConnect
+try:
+    from Mc4u.mdbagent import MdbConnect
+except :
+    from mdbagent import MdbConnect
+
 pp = pprint.PrettyPrinter(indent=4)
 try:
     sources = sys._MEIPASS
 except:
     sources = ''
 
-
-
-
 class reqBalanceAna(object) :
     """description of class"""
-    def __init__(self, chem_base, debut, fin):
-
+    def __init__(self, chem_base):
+        self.chem_base = chem_base
+        self.pnl_dico = None
+        logging.info("Query db compta : {}".format(self.chem_base))
         
-        logging.info("Query db compta : {}".format(chem_base))
-        
-        # constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq='+ chem_base
-
+        # constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq='+ self.chem_base
+    def get_data(self, debut, fin):
         sql = f"""SELECT
             CUM.Centre AS CodeAna, 
             MENS.Solde AS SoldeMens, 
@@ -48,38 +49,21 @@ class reqBalanceAna(object) :
             OR NumeroCompte LIKE '7%') 
             GROUP BY Centre) CUM 
             ON MENS.Centre=CUM.Centre"""
-        with MdbConnect(chem_base) as mdb:
+        with MdbConnect(self.chem_base) as mdb:
             self.data = mdb.query(sql)
-
-        # logging.info(sSQL1)
-        # pp.pprint(sSQL1)
-        # try :
-        #     self.conn = pyodbc.connect(constr, autocommit=True)
-        #     self.cur = self.conn.cursor()
-
-        #     self.cur.execute(sSQL1)
-        #     self.data = list(self.cur)
-        #     logging.info("Query OK, {} rows".format(str(len(self.data))))
-
-        # except pyodbc.Error :
-        #     print("erreur requete base {} \n {}".format(chem_base,sys.exc_info()[1]))
-        #     logging.error(("erreur requete base {} \n {}".format(chem_base,sys.exc_info()[1])))
-
-
-            # self.conn.close()
+        return self.data
 
     def creaDic(self, codes):
 
         copy_codes = codes.copy()
-
-        for item in codes.keys():    
+        for item in codes.keys():
             copy_codes[item].setdefault("sold_mensuel", 0.0)
             copy_codes[item].setdefault("sold_cumule", 0.0)
         
         for centre, soldeMensuel, soldeCumule in self.data:
 
             for item in codes.keys():
-
+                
                 if centre == codes[item]['centre'] :
 
                     # Si le centre n'est pas alimenté dans Quadra
@@ -136,14 +120,14 @@ class reqBalanceAna(object) :
             {"sold_mensuel" : (copy_codes["028"]["sold_mensuel"] +
                                copy_codes["030"]["sold_mensuel"] +
                                copy_codes["032"]["sold_mensuel"] +
-                               copy_codes["034"]["sold_mensuel"]+
-                               copy_codes["036"]["sold_mensuel"]+
-                               copy_codes["038"]["sold_mensuel"]+
-                               copy_codes["040"]["sold_mensuel"]+
-                               copy_codes["042"]["sold_mensuel"]+
-                               copy_codes["044"]["sold_mensuel"]+
-                               copy_codes["046"]["sold_mensuel"]+
-                               copy_codes["048"]["sold_mensuel"]+
+                               copy_codes["034"]["sold_mensuel"] +
+                               copy_codes["036"]["sold_mensuel"] +
+                               copy_codes["038"]["sold_mensuel"] +
+                               copy_codes["040"]["sold_mensuel"] +
+                               copy_codes["042"]["sold_mensuel"] +
+                               copy_codes["044"]["sold_mensuel"] +
+                               copy_codes["046"]["sold_mensuel"] +
+                               copy_codes["048"]["sold_mensuel"] +
                                copy_codes["050"]["sold_mensuel"]),
             "sold_cumule" : (copy_codes["028"]["sold_cumule"] +
                              copy_codes["030"]["sold_cumule"] +
@@ -229,28 +213,29 @@ class reqBalanceAna(object) :
         return copy_codes
 
 
+# if __name__ == '__main__':
 
-if __name__ == '__main__':
+#     from importCodes import importCodes
 
-    from importCodes import importCodes
+#     FORMAT = '%(asctime)s -- %(module)s -- %(levelname)s -- %(message)s'
+#     logging.basicConfig(handlers=[logging.basicConfig(level=logging.DEBUG,
+#                                                   format=FORMAT)])
 
-    FORMAT = '%(asctime)s -- %(module)s -- %(levelname)s -- %(message)s'
-    logging.basicConfig(handlers=[logging.basicConfig(level=logging.DEBUG,
-                                                  format=FORMAT)])
-
-    xl = os.path.join(sources,"CodesAnalytiques.xlsx")
+#     xl = os.path.join(sources,"Mc4u\CodesAnalytiques.xlsx")
+#     xl = "V:\Mathieu\PROJET\PROJET_COMPTA\operateur_xl\Operateurxl_sans_pandas\Mc4u\CodesAnalytiques.xlsx"
 
 
-    myobj = importCodes(xl)
-    codes = myobj.creaDic()
+#     myobj = importCodes(xl)
+#     codes = myobj.creaDic()
 
-    db_path = "//srvquadra/qappli/quadra/database/cpta/dc/000177/qcompta.mdb"
-    debut = datetime(year=2019, month=1, day=1)
-    fin = datetime(year=2019, month=6, day=1)
+#     db_path = "//srvquadra/qappli/quadra/database/cpta/dc/000177/qcompta.mdb"
+#     debut = datetime(year=2019, month=1, day=1)
+#     fin = datetime(year=2019, month=6, day=1)
 
-    logging.debug("\nDossier : {}\nDebut : {}\nFin : {}".
-                  format(db_path, debut, fin))
+#     logging.debug("\nDossier : {}\nDebut : {}\nFin : {}".
+#                   format(db_path, debut, fin))
 
-    myObj = reqBalanceAna(db_path, debut, fin)
-    #print ("constr p&l")
-    data = myObj.creaDic(codes)
+#     myObj = reqBalanceAna(db_path, debut, fin)
+#     #print ("constr p&l")
+#     data = myObj.creaDic(codes)
+#     print(data)
