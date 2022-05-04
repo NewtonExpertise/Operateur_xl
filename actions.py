@@ -3,14 +3,25 @@ from mdbagent import MdbConnect
 import xlwings as xw
 from datetime import timedelta,datetime
 from Mc4u.mc4u import Gene_Mc4u
-from Mc4u.generateur_excel import generateur_excel
+# from Mc4u.generateur_excel import generateur_excel
+# from Mc4u.generateur_xl_ACD import generateur_excel
 
 import re
 
 
 def Mc4u_Minot(code_dossier, debut, fin):
+    print("gene_Mc4u")
     Mc4u = Gene_Mc4u(code_dossier, debut, fin)
-    Mc4u.get_Mc4u()
+    Mc4u.gen_xl_qdra()
+    print("getmc4u")
+    Mc4u.get_Mc4u_qdra()
+
+def Mc4u_Minot_acd(code_dossier, debut, fin):
+    print("gene_Mc4u")
+    Mc4u = Gene_Mc4u(code_dossier, debut, fin)
+    Mc4u.gen_xl_acd()
+    print("getmc4u")
+    Mc4u.get_Mc4u_acd()
 
 
 

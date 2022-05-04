@@ -13,6 +13,7 @@ class QuadraSetEnv(object):
         self.gi = ""
         self.conn = ""
         self.cur = ""
+        self.liste_cli = {}
 
         with open(ipl_file, "r") as f:
             lines = f.readlines()
@@ -34,6 +35,7 @@ class QuadraSetEnv(object):
         type_dossier = type_dossier.upper()
         num_dossier = num_dossier.upper()
         db_path = ""
+        
         if (
             type_dossier == "DC"
             or type_dossier.startswith("DA")
@@ -43,6 +45,7 @@ class QuadraSetEnv(object):
 
         elif type_dossier == "PAIE":
             db_path = os.path.join(self.paie, num_dossier, "qpaie.mdb")
+        print(db_path)
         return os.path.abspath(db_path)
 
     def chemins_cpta(self, categ="D", tail=""):
@@ -157,7 +160,36 @@ class QuadraSetEnv(object):
         dcpath = self.make_db_path("DC", dossier)
         if os.path.isfile(dcpath):
             liste.insert(0, ("DC", dcpath))
-        return liste        
+        return liste    
+
+    def gi_liste_clients(self):
+
+        mdb_path = os.path.join(self.gi, "0000", "qgi.mdb")
+        constr = "Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq=" + mdb_path
+        logging.info("openning qgi : {}".format(mdb_path))
+        sql = """
+            SELECT I.Code, I.Nom 
+            FROM Intervenants I 
+            INNER JOIN Clients C ON I.Code=C.Code 
+            WHERE I.IsClient='1'
+            """
+        try:
+            self.conn = pyodbc.connect(constr, autocommit=True)
+            self.cur = self.conn.cursor()
+            self.cur.execute(sql)
+            data = list(self.cur)
+            logging.info("connection OK")
+        except pyodbc.Error:
+            logging.error(
+                ("erreur requete base {} \n {}".format(mdb_path, sys.exc_info()[1]))
+            )
+            return False
+        
+        for code, rs in data:
+            self.liste_cli.update({code : {"rs" : rs}})
+
+
+        return self.liste_cli    
 
     def bannis(self):
         bannis = [

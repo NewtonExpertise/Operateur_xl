@@ -1,7 +1,7 @@
 import  xlwings as xw
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from Mc4u.mdbagent import MdbConnect
+from mdbagent import MdbConnect
 
 
 try:
@@ -10,7 +10,6 @@ try:
 except:
     ws = False
     wb= False
-
 def if_reporting():
     """controle sur 3 cellules pour identifier qu'il s'agisse bien de l'excel de reporting Mcdo"""
     if ws:
@@ -25,6 +24,7 @@ def if_report_sheet(fin):
     target = fin.strftime("%m%Y")
     exist = False
     print(target)
+    print(wb.sheets)
     for sheet in wb.sheets:
         print(sheet)
         if target ==  sheet.name:
@@ -33,9 +33,10 @@ def if_report_sheet(fin):
     return exist
 
 
-def dataReporting(dico, fin_periode, nb_resto, Mdb_holding):
+def dataReporting(dico, fin_periode, nb_resto, RT_holding):
     """Alimente le reporting avec les données extraites de la compta et les cumuls de l'onget du mois précédent."""
     print("dataReporting")
+    
     vents_alim = dico["001"]["sold_mensuel"]
     vents_non_alim = dico["085"]["sold_mensuel"]
     marge_brut = dico["020"]["sold_mensuel"]
@@ -43,7 +44,6 @@ def dataReporting(dico, fin_periode, nb_resto, Mdb_holding):
     soi = dico["093"]["sold_mensuel"]
     g_a = dico["102"]["sold_mensuel"]
     resultat_pnl = dico["106"]["sold_mensuel"]
-    RT_holding  = get_RT_holding(Mdb_holding, fin_periode)
     lastmonth = fin_periode + relativedelta(months=-1)
     target_sheet_periode = fin_periode.strftime("%m%Y")
     find_ws = False
@@ -80,6 +80,8 @@ def dataReporting(dico, fin_periode, nb_resto, Mdb_holding):
             if last_sheet.range("Q17").value:
                 resultat_pnl += last_sheet.range("Q17").value
             if last_sheet.range("R17").value:
+                print(RT_holding)
+                print(last_sheet.range("R17").value)
                 RT_holding += last_sheet.range("R17").value
 
         target_sheet_result = wb.sheets[target_sheet_periode]
@@ -122,11 +124,12 @@ def get_RT_holding(chem_base, fin):
             WHERE TypeLigne='E'
             AND NumeroCompte LIKE '6%'
             AND PeriodeEcriture=#{fin}#)"""
-    print(sql)
-    print(chem_base)
+
     with MdbConnect(chem_base) as mdb:
         data = mdb.query(sql)[0][0]
     return data
+
+
 
 if __name__ == '__main__':
     from datetime import datetime

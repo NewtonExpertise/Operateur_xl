@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import logging
 import tempfile
 import os
@@ -8,7 +8,7 @@ from xlwt import Workbook, easyxf, Formula
 from datetime import datetime, timedelta
 from Mc4u.importCodes import importCodes
 from Mc4u.ProfitAndLossRequest import reqBalanceAna
-from quadraenv import QuadraSetEnv
+from Mc4u.ACD_env import get_group_mcdo, get_list_group_mcdo, get_balance_ana_exercice, get_holding_result
 import re
 from collections import defaultdict, OrderedDict
 import sys
@@ -17,41 +17,34 @@ try:
     sources = sys._MEIPASS
 except:
     sources = ''
-    
-ipl = r"\\srvquadra\qappli\quadra\database\client\quadra.ipl"
 
-class generateur_excel(object):
+class generateur_excel_ACD(object):
 
     def __init__(self, code_dossier):
-        self.qenv = QuadraSetEnv(ipl)
-
-        self.code_dossier = code_dossier.zfill(6)
-
-
-        self.liste_cli = self.qenv.gi_liste_clients()
-
-
-        self.group, self.holding, self.list_groupe_Mc4u = self.get_groupe()
+        self.code_dossier = code_dossier
+        self.group = get_group_mcdo(code_dossier)
         self.PNL_global = False
         self.nb_resto = 0
-        self.mdb_holding = self.qenv.make_db_path(self.holding, "DC")
         self.l_mois_periode = None
         self.last_month_for_pnl = ""
+        self.group, self.holding, self.list_groupe_Mc4u = self.get_groupe()
+        self.rt_holding = None
+
 
 
     def invoke(self, debut ,fin):
         """articule la génération d'un excel Mc4u."""
+        self.rt_holding = get_holding_result(self.holding, debut, fin)
         book = Workbook()
         if self.group:
+            x =  0
             for codeQuadra, codeMcdo, _ in self.list_groupe_Mc4u:
                 xl_codes_ana = os.path.join(sources,"Mc4u/CodesAnalytiques.xls")
                 impcod = importCodes(xl_codes_ana)
                 codes_ana = impcod.creaDic()
-                mdb_path = self.qenv.make_db_path( "DC",codeQuadra)
-                sa = reqBalanceAna(mdb_path)             ################ changement
-                sa.get_data(debut, fin)
-                dico = sa.creaDic(codes_ana)
-
+                data = get_balance_ana_exercice(codeQuadra, debut, fin)
+                dico = self.creaDic(codes_ana, data)
+     
                 if self.PNL_global:
                     self.create_global_PNL(dico)
                 else:
@@ -59,6 +52,7 @@ class generateur_excel(object):
                     self.nb_resto+=1
                
                 self.get_Mc4u(book, dico, fin, codeMcdo)
+
             self.Invoke_pnl_minot(debut, fin)
 
             
@@ -70,17 +64,18 @@ class generateur_excel(object):
             sa = reqBalanceAna(mdb_path, debut, fin)
             dico = sa.creaDic(codes_ana)
             self.get_Mc4u(book, dico, fin, self.nom_dossier)
-        filename = f"JV_{self.nom_group}_MC4U_{fin.strftime('%Y-%m')}.xls"
+        filename = f"JV_{self.group}_MC4U_{fin.strftime('%Y-%m')}.xls"
         self.save_wb(book,filename)
 
     def get_Mc4u(self, book, dico, fin, codeMcdo):
         """
         Génère un Mc4u sur un nouvel onglet.
         """
+
         sheet1 = book.add_sheet(f'{fin.strftime("%Y%m")}_{codeMcdo}')
         sheet1.col(1).width = 10000
-        sheet1.col(1).width = 5000
-        sheet1.col(1).width = 5000
+        sheet1.col(2).width = 5000
+        sheet1.col(3).width = 5000
 
         fmtHeader = easyxf(
             (
@@ -218,8 +213,10 @@ class generateur_excel(object):
 
 
     def list_mois_periode(self, debut, fin):
-
+        print(debut)
+        print(fin)
         fin_annee = datetime(year= debut.year+1, month = debut.month,  day = debut.day)-timedelta(1)
+        print(fin_annee)
         self.last_month_for_pnl =fin_annee.replace(day = 1)
  
         self.last_month_for_pnl
@@ -229,13 +226,14 @@ class generateur_excel(object):
             list_periode_intervalle_mois.append(fin)
         else:
             list_periode_intervalle_mois.append(debut)
-
+        print(list_periode_intervalle_mois)
         return list_periode_intervalle_mois
 
 
     def Invoke_pnl_minot(self,debut, fin):
 
         """articule la génération d'un excel PNL pour chaque resto de chaque mois pour une année."""
+        self.rt_holding = get_holding_result(self.holding, debut, fin)
         book = Workbook()
         pnl_dict = defaultdict(dict)
         self.l_mois_periode = self.list_mois_periode(debut, fin)
@@ -247,18 +245,15 @@ class generateur_excel(object):
         if self.group:
             for codeQuadra, codeMcdo, region in self.list_groupe_Mc4u:
                 
-                mdb_path = self.qenv.make_db_path( "DC",codeQuadra)
-                sa = reqBalanceAna(mdb_path)
                 
                 for periode in self.l_mois_periode:
-
                     impcod = importCodes(xl_codes_ana)
                     codes_ana = impcod.creaDic()
-                    sa.get_data(periode, periode)
-                    data = sa.creaDic(codes_ana)
-                    
+                    data = get_balance_ana_exercice(codeQuadra, periode, periode)
+                    dico = self.creaDic(codes_ana, data)
+
                     pnl_dict[codeMcdo].update({"region":region,
-                                                periode:data})
+                                                periode:dico})
  
             
             pnl_dict = self.regroup_resto(pnl_dict, self.l_mois_periode)
@@ -270,14 +265,173 @@ class generateur_excel(object):
             codes_ana = impcod.creaDic()
             mdb_path = self.qenv.make_db_path(self.code_dossier, "DC")
             sa = reqBalanceAna(mdb_path, debut, fin)
-            dico = sa.creaDic(codes_ana)
+            dico = sa.creaDic(codes_ana,data)
             self.get_Mc4u(book, dico, fin, self.nom_dossier)
         filename = f"PNL_Group_Minot_{fin.strftime('%Y%m')}.xls"
         self.save_wb(book,filename)
 
 
+    def creaDic(self, codes, data):
+
+        copy_codes = codes.copy()
+        for item in codes.keys():
+            copy_codes[item].setdefault("sold_mensuel", 0.0)
+            copy_codes[item].setdefault("sold_cumule", 0.0)
+        if data : 
+            for centre, soldeMensuel, soldeCumule in data:
+
+                for item in codes.keys():
+                    
+                    if centre == codes[item]['centre'] :
+
+                        # Si le centre n'est pas alimenté dans Quadra
+                        # faut remplacer Non par 0
+                        if soldeMensuel == None:
+                            soldeMensuel = 0.0
+                        if soldeCumule == None:
+                            soldeCumule = 0.0
+                        # Les centres de produit doivent être 
+                        # inversés
+                        if item in ["001", "085", "087"] :
+                            soldeMensuel = -soldeMensuel
+                            soldeCumule = -soldeCumule
+
+                        copy_codes[item].update({"sold_mensuel":soldeMensuel,
+                                        "sold_cumule": soldeCumule})
+                        break
+            
+            copy_codes["000"].update(
+                {"sold_mensuel" : (copy_codes["001"]["sold_mensuel"] + 
+                                copy_codes["085"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["001"]["sold_cumule"] + 
+                                copy_codes["085"]["sold_cumule"]) })
+
+            copy_codes["014"].update(
+                {"sold_mensuel" : (copy_codes["010"]["sold_mensuel"] +
+                                copy_codes["011"]["sold_mensuel"] +
+                                copy_codes["012"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["010"]["sold_cumule"] +
+                                copy_codes["011"]["sold_cumule"] +
+                                copy_codes["012"]["sold_cumule"])})
+
+            copy_codes["019"].update(
+                {"sold_mensuel" : (copy_codes["013"]["sold_mensuel"] +
+                                copy_codes["014"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["013"]["sold_cumule"] +
+                                copy_codes["014"]["sold_cumule"])})
+
+            copy_codes["020"].update(
+                {"sold_mensuel" : (copy_codes["001"]["sold_mensuel"] -
+                                copy_codes["019"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["001"]["sold_cumule"] -
+                                copy_codes["019"]["sold_cumule"])})
+
+            copy_codes["028"].update(
+                {"sold_mensuel" : (copy_codes["023"]["sold_mensuel"] +
+                                copy_codes["024"]["sold_mensuel"] +
+                                copy_codes["026"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["023"]["sold_cumule"] +
+                                copy_codes["024"]["sold_cumule"] +
+                                copy_codes["026"]["sold_cumule"])})
+
+            copy_codes["055"].update(
+                {"sold_mensuel" : (copy_codes["028"]["sold_mensuel"] +
+                                copy_codes["030"]["sold_mensuel"] +
+                                copy_codes["032"]["sold_mensuel"] +
+                                copy_codes["034"]["sold_mensuel"] +
+                                copy_codes["036"]["sold_mensuel"] +
+                                copy_codes["038"]["sold_mensuel"] +
+                                copy_codes["040"]["sold_mensuel"] +
+                                copy_codes["042"]["sold_mensuel"] +
+                                copy_codes["044"]["sold_mensuel"] +
+                                copy_codes["046"]["sold_mensuel"] +
+                                copy_codes["048"]["sold_mensuel"] +
+                                copy_codes["050"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["028"]["sold_cumule"] +
+                                copy_codes["030"]["sold_cumule"] +
+                                copy_codes["032"]["sold_cumule"] +
+                                copy_codes["034"]["sold_cumule"] +
+                                copy_codes["036"]["sold_cumule"] +
+                                copy_codes["038"]["sold_cumule"] +
+                                copy_codes["040"]["sold_cumule"] +
+                                copy_codes["042"]["sold_cumule"] +
+                                copy_codes["044"]["sold_cumule"] +
+                                copy_codes["046"]["sold_cumule"] +
+                                copy_codes["048"]["sold_cumule"] +
+                                copy_codes["050"]["sold_cumule"])})
+
+            copy_codes["060"].update(
+                {"sold_mensuel" : (copy_codes["020"]["sold_mensuel"] -
+                                copy_codes["055"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["020"]["sold_cumule"] -
+                                copy_codes["055"]["sold_cumule"])})
+
+
+            copy_codes["084"].update(
+                {"sold_mensuel" : (copy_codes["062"]["sold_mensuel"] +
+                                copy_codes["064"]["sold_mensuel"] +
+                                copy_codes["065"]["sold_mensuel"] +
+                                copy_codes["068"]["sold_mensuel"] +
+                                copy_codes["071"]["sold_mensuel"] +
+                                copy_codes["074"]["sold_mensuel"] +
+                                copy_codes["076"]["sold_mensuel"] +
+                                copy_codes["077"]["sold_mensuel"] +
+                                copy_codes["078"]["sold_mensuel"] +
+                                copy_codes["080"]["sold_mensuel"] +
+                                copy_codes["082"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["062"]["sold_cumule"] +
+                                copy_codes["064"]["sold_cumule"] +
+                                copy_codes["065"]["sold_cumule"] +
+                                copy_codes["068"]["sold_cumule"] +
+                                copy_codes["071"]["sold_cumule"] +
+                                copy_codes["074"]["sold_cumule"] +
+                                copy_codes["076"]["sold_cumule"] +
+                                copy_codes["077"]["sold_cumule"] +
+                                copy_codes["078"]["sold_cumule"] +
+                                copy_codes["080"]["sold_cumule"] +
+                                copy_codes["082"]["sold_cumule"])})
+
+            copy_codes["090"].update(
+                {"sold_mensuel" : (copy_codes["085"]["sold_mensuel"] +
+                                copy_codes["087"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["085"]["sold_cumule"] +
+                                copy_codes["087"]["sold_cumule"])})
+
+            copy_codes["093"].update(
+                {"sold_mensuel" : (copy_codes["060"]["sold_mensuel"] -
+                                copy_codes["084"]["sold_mensuel"] +
+                                copy_codes["090"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["060"]["sold_cumule"] -
+                                copy_codes["084"]["sold_cumule"] +
+                                copy_codes["090"]["sold_cumule"])})
+
+            copy_codes["104"].update(
+                {"sold_mensuel" : (copy_codes["101"]["sold_mensuel"] +
+                                copy_codes["102"]["sold_mensuel"] +
+                                copy_codes["103"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["101"]["sold_cumule"] +
+                                copy_codes["102"]["sold_cumule"] +
+                                copy_codes["103"]["sold_cumule"])})
+
+            copy_codes["106"].update(
+                {"sold_mensuel" : (copy_codes["093"]["sold_mensuel"] -
+                                copy_codes["104"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["093"]["sold_cumule"] -
+                                copy_codes["104"]["sold_cumule"])})
+
+            copy_codes["108"].update(
+                {"sold_mensuel" : (copy_codes["106"]["sold_mensuel"] -
+                                copy_codes["107"]["sold_mensuel"]),
+                "sold_cumule" : (copy_codes["106"]["sold_cumule"] -
+                                copy_codes["107"]["sold_cumule"])})
+
+
+
+        return copy_codes
+
 
     def regroup_resto(self, dict_pnl, l_periode):
+        """dict {code{dt[[ana]]}}"""
         dict_pnl2 = copy.deepcopy(dict_pnl)
         d_regroup = defaultdict(dict)
 
@@ -314,14 +468,14 @@ class generateur_excel(object):
                 "alignment: horizontal center; "
                 # "borders: left thick, right thick, top thick, bottom thick;"
             ),
-            num_format_str="# ### ### ##0.00",
+            num_format_str="# ### ### ### ##0.00",
         )
         fmtNeutr = easyxf(
             (
                 "font: bold False; "
                 # "borders: left thick, right thick, top thick, bottom thick;"
             ),
-            num_format_str="# ### ### ##0.00",
+            num_format_str="# ### ### ### ##0.00",
         )
         fmtJaune = easyxf(
             (
@@ -329,7 +483,7 @@ class generateur_excel(object):
                 # "borders: left thick, right thick, top thick, bottom thick; "
                 "pattern: pattern solid, fore_colour light_orange;"
             ),
-            num_format_str="# ### ### ##0.00",
+            num_format_str="# ### ### ### ##0.00",
         )
         fmtGris = easyxf(
             (
@@ -337,12 +491,38 @@ class generateur_excel(object):
                 # "borders: left thick, right thick, top thick, bottom thick; "
                 "pattern: pattern solid, fore_colour gray25;"
             ),
-            num_format_str="# ### ### ##0.00",
+            num_format_str="# ### ### ### ##0.00",
         )
         for codeMcdo, d_data in dico.items():
             
             sheet1 = book.add_sheet(f'{codeMcdo}')
             sheet1.col(1).width = 10000
+            sheet1.col(3).width = 2051
+            sheet1.col(5).width = 2051
+            sheet1.col(7).width = 2051
+            sheet1.col(9).width = 2051
+            sheet1.col(11).width = 2051
+            sheet1.col(13).width = 2051
+            sheet1.col(15).width = 2051
+            sheet1.col(17).width = 2051
+            sheet1.col(19).width = 2051
+            sheet1.col(21).width = 2051
+            sheet1.col(23).width = 2051
+            sheet1.col(25).width = 2051
+            sheet1.col(27).width = 2051
+            sheet1.col(2).width = 3407
+            sheet1.col(4).width = 3883
+            sheet1.col(6).width = 3883
+            sheet1.col(8).width = 3883
+            sheet1.col(10).width = 3883
+            sheet1.col(12).width = 3883
+            sheet1.col(14).width = 3883
+            sheet1.col(16).width = 3883
+            sheet1.col(18).width = 3883
+            sheet1.col(20).width = 3883
+            sheet1.col(22).width = 3883
+            sheet1.col(24).width = 3883
+            sheet1.col(26).width = 3883
             sheet1.write(0, 0, "N° COMPTE", fmtHeader)
             sheet1.write(0, 1, "COMPTES", fmtHeader)
             col = 2
@@ -407,6 +587,14 @@ class generateur_excel(object):
         """
         Ajoute les formules de calcule pour obtenir la répartition en % des montants
         """
+        fmtHeader = easyxf(
+            (
+                "font: bold True; "
+                "alignment: horizontal center; "
+                # "borders: left thick, right thick, top thick, bottom thick;"
+            ),
+            num_format_str="# ### ### ### ##0.00",
+        )
         
         fmtN = easyxf(
             (
@@ -523,7 +711,9 @@ class generateur_excel(object):
             num_format_str="# ### ### ##0.00",
         )
         
-        sheet.write(row-1, col,    Formula(f"C{row}+E{row}+G{row}+I{row}+K{row}+M{row}+O{row}+Q{row}+S{row}+U{row}+W{row}+Y{row}"),fmtN)
+        sheet.write(0, col,    Formula(f'"Total "&right(Y1,4)'),fmtHeader)
+        sheet.write(0, col+1, "%",fmtHeader)
+        sheet.write(row-1, col,  Formula(f"C{row}+E{row}+G{row}+I{row}+K{row}+M{row}+O{row}+Q{row}+S{row}+U{row}+W{row}+Y{row}"),fmtN)
         sheet.write(row, col,    Formula(f"C{row+1}+E{row+1}+G{row+1}+I{row+1}+K{row+1}+M{row+1}+O{row+1}+Q{row+1}+S{row+1}+U{row+1}+W{row+1}+Y{row+1}"),fmtJ)
         sheet.write(row+1, col,  Formula(f"C{row+2}+E{row+2}+G{row+2}+I{row+2}+K{row+2}+M{row+2}+O{row+2}+Q{row+2}+S{row+2}+U{row+2}+W{row+2}+Y{row+2}"),fmtN)
         sheet.write(row+2, col,  Formula(f"C{row+3}+E{row+3}+G{row+3}+I{row+3}+K{row+3}+M{row+3}+O{row+3}+Q{row+3}+S{row+3}+U{row+3}+W{row+3}+Y{row+3}"),fmtN)

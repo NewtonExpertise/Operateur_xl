@@ -8,7 +8,6 @@ PP = pprint.PrettyPrinter(indent=4)
 
 
 class importCodes(object):
-    """description of class"""
 
     def __init__(self, chemXl):
 

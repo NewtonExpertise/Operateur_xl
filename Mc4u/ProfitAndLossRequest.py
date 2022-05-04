@@ -8,7 +8,6 @@ try:
     from Mc4u.mdbagent import MdbConnect
 except :
     from mdbagent import MdbConnect
-
 pp = pprint.PrettyPrinter(indent=4)
 try:
     sources = sys._MEIPASS
@@ -22,7 +21,7 @@ class reqBalanceAna(object) :
         self.pnl_dico = None
         logging.info("Query db compta : {}".format(self.chem_base))
         
-        # constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq='+ self.chem_base
+        #constr = 'Driver={Microsoft Access Driver (*.mdb, *.accdb)};Dbq='+ self.chem_base
     def get_data(self, debut, fin):
         sql = f"""SELECT
             CUM.Centre AS CodeAna, 
@@ -49,9 +48,12 @@ class reqBalanceAna(object) :
             OR NumeroCompte LIKE '7%') 
             GROUP BY Centre) CUM 
             ON MENS.Centre=CUM.Centre"""
+        print(self.chem_base)
+
         with MdbConnect(self.chem_base) as mdb:
             self.data = mdb.query(sql)
         return self.data
+
 
     def creaDic(self, codes):
 
@@ -213,29 +215,29 @@ class reqBalanceAna(object) :
         return copy_codes
 
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-#     from importCodes import importCodes
-
-#     FORMAT = '%(asctime)s -- %(module)s -- %(levelname)s -- %(message)s'
-#     logging.basicConfig(handlers=[logging.basicConfig(level=logging.DEBUG,
-#                                                   format=FORMAT)])
-
-#     xl = os.path.join(sources,"Mc4u\CodesAnalytiques.xlsx")
-#     xl = "V:\Mathieu\PROJET\PROJET_COMPTA\operateur_xl\Operateurxl_sans_pandas\Mc4u\CodesAnalytiques.xlsx"
+    from importCodes import importCodes
+    print("hello")
+   
+    xl = os.path.join(sources,"Mc4u\CodesAnalytiques.xlsx")
+    xl = "V:\Mathieu\PROJET\PROJET_COMPTA\operateur_xl\Operateurxl_sans_pandas\Mc4u\CodesAnalytiques.xls"
 
 
-#     myobj = importCodes(xl)
-#     codes = myobj.creaDic()
+    myobj = importCodes(xl)
+    codes = myobj.creaDic()
+    print(codes)
 
-#     db_path = "//srvquadra/qappli/quadra/database/cpta/dc/000177/qcompta.mdb"
-#     debut = datetime(year=2019, month=1, day=1)
-#     fin = datetime(year=2019, month=6, day=1)
+    db_path = "//srvquadra/qappli/quadra/database/cpta/dc/000752/qcompta.mdb"
+    debut = datetime(year=2019, month=1, day=1)
+    fin = datetime(year=2019, month=6, day=1)
 
-#     logging.debug("\nDossier : {}\nDebut : {}\nFin : {}".
-#                   format(db_path, debut, fin))
-
-#     myObj = reqBalanceAna(db_path, debut, fin)
-#     #print ("constr p&l")
-#     data = myObj.creaDic(codes)
-#     print(data)
+    logging.debug("\nDossier : {}\nDebut : {}\nFin : {}".
+                  format(db_path, debut, fin))
+    print("iji")
+    myObj = reqBalanceAna(db_path)
+    print ("constr p&l")
+    data=myObj.get_data( debut, fin)
+    print(data)
+    data = myObj.creaDic(codes)
+    print(data)

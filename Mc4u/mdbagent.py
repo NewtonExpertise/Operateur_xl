@@ -34,7 +34,7 @@ class MdbConnect(object):
     Wrapper pour les connexion à quadra avec pyodbc
     mdb_path = chemin complet vers le fichier *.mdb
     """
-
+   
     def __init__(self, mdb_path):
         self.mdb_path = mdb_path
         self.conx = ""

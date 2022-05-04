@@ -85,7 +85,7 @@ class MdbConnect(object):
 
     def query(self, sql):
         data = []
-
+        print(self.cursor)
         try:
             self.cursor.execute(sql)
         except pyodbc.Error:
